@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>{{ page.title }}</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+        <!-- syntax highlighting CSS -->
+        <link rel="stylesheet" href="/css/syntax.css">
+
+        <!-- Custom CSS -->
+        <link rel="stylesheet" type="text/css" href="/css/bootstrap.min.css" media="screen">
+        <link rel="stylesheet" type="text/css" href="/css/font-awesome.min.css">
+        <link href='http://fonts.googleapis.com/css?family=Open+Sans:400italic,400,700' rel='stylesheet' type='text/css'>
+        <link rel="stylesheet" href="/css/main.css">
+
+    </head>
+    <body>
+
+      <div class="container">
+        <div class="row">
+          <div class="col-md-3 col-xs-12">
+            <section id="prez">
+              <a href="/" id="hi">Hi!</a>
+              <br/>
+              <p id="me">I'm Alexandre, <span class="blue">software engineer.</span></p>
+              <div id="passions"> <span>I'm passionate about</span>
+                <ul>
+                  <li class="blue">innovative Web applications</li>
+                  <li class="green">distributed systems</li>
+                  <li class="blue">functional programming</li>
+                  <li class="green">big data</li>
+                </ul>
+              </div>
+              <div>
+                <a class="link-icon" href="mailto:tamborrino.alexandre@gmail.com">
+                  <i class="icon-envelope icon-2x icon"></i>
+                </a>
+                <a class="link-icon" href="https://twitter.com/altamborrino">
+                  <i class="icon-twitter icon-2x icon"></i> 
+                </a>
+                <a class="link-icon" href="https://github.com/atamborrino">
+                  <i class="icon-github icon-2x icon"></i>
+                </a>
+                <a class="link-icon" href="http://www.linkedin.com/pub/alexandre-tamborrino/27/a9b/50/en">
+                  <i class="icon-linkedin icon-2x icon"></i>
+                </a>
+              </div>
+            </section>
+          </div>
+          <div class="col-md-9 col-xs-12">
+            <section id="post-container">
+            {{content}}
+            </section>
+          </div>
+        </div>
+      </div>
+
+    </body>
+</html>

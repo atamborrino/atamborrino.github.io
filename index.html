@@ -1,0 +1,16 @@
+---
+layout: default
+title: Alexandre Tamborrino's Blog
+---
+
+<div>
+    <h2 id="recent-posts-title">Recent posts</h2>
+    <ul id="recent-posts">
+     {% for post in site.posts %}
+      <li>
+        <span class="list-post-titles"><a href="{{ post.url }}">{{ post.title }}</a> 
+        <span class="date">- {{ post.date | date_to_string }}</span></span>
+      </li>
+      {% endfor %}
+    </ul>
+</div>

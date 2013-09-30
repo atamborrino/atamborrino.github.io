@@ -1,0 +1,144 @@
+/************/
+/*
+/* Layout
+/*
+/************/
+
+body {
+	font-family: 'Open Sans', sans-serif;
+	font-size: 17px;
+}
+
+h1,h2,h3,h4,h5,h6 {
+	font-family: 'Open Sans', sans-serif;
+	font-weight: normal;
+}
+
+a {
+	color: #3498DB;
+	transition: color 0.25s;
+}
+
+a:hover {
+	color: #1ABC9C;
+	text-decoration: none;
+}
+
+#hi {
+	font-size: 80px;
+}
+
+#prez {
+	margin-top: 30px;
+	padding-right: 6px; 
+}
+
+@media (min-width: 992px) {
+	#prez {
+		border-right: 1px solid #ECF0F1; 
+	}
+}
+
+#me {
+	color: #1ABC9C;
+	font-size: 26px;
+}
+
+.blue {
+	color: #3498DB;
+}
+
+.green {
+	color: #1ABC9C;
+}
+
+#passions {
+	margin-top: 30px;
+	margin-bottom: 30px;
+}
+
+#passions ul {
+	list-style-type: none;
+	padding: 0;
+}
+
+@media (max-width: 768px) {
+	#passions li {
+		display: inline;
+	}
+
+	#passions ul {
+		display: inline;
+	}
+}
+
+.icon {
+	transition: color 0.25s;
+}
+
+.icon:hover {
+	color: #3498DB;
+}
+
+.link-icon {
+	color: black;
+	padding-right: 15px;
+}
+
+.link-icon:hover {
+	text-decoration: none;
+	color: black;
+}
+
+#post-container {
+	margin-top: 70px;
+}
+
+@media (min-width: 992px) {
+	#post-container {
+		margin-left: 30px;
+	}
+}
+
+.date {
+	color: #95A5A6;
+	font-size: 17px;
+}
+
+/************/
+/*
+/* Index
+/*
+/************/
+
+#recent-posts-title {
+	font-size: 40px;
+	margin-bottom: 33px;
+}
+
+#recent-posts {
+	list-style-type: none;
+	padding: 0;
+}
+
+.list-post-titles {
+	font-size: 24px;
+}
+
+/************/
+/*
+/* Posts
+/*
+/************/
+
+.post-titles {
+	font-size: 40px;
+	margin-bottom: 20px;
+}
+
+.code {
+	font-size: 14px;
+	margin-top: 15px;
+	margin-bottom: 30px;
+}
+
