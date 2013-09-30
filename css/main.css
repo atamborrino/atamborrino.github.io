@@ -38,6 +38,12 @@ a:hover {
 		border-right: 1px solid #ECF0F1; 
 	}
 }
+@media (min-width: 1200px) {
+	#prez {
+		position: fixed;
+		width: 293px;
+	}
+}	
 
 #me {
 	color: #1ABC9C;
