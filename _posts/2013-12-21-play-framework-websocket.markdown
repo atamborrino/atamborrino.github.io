@@ -238,7 +238,7 @@ def ws = WebSocket.using[String] { httpReq =>
 Helper function:
 
 ```scala
-def mixableStream[E, F](handler: E => Enumerator[F]): (Iteratee[E, Enumerator[F]], Enumerator[F]) = {
+def mixableStream[E, F](handler: E => Enumerator[F]): (Iteratee[E, _], Enumerator[F]) = {
   val promiseIn = promise[Iteratee[E, Enumerator[F]]]
 
   val out = Concurrent.patchPanel[F] { patcher =>
