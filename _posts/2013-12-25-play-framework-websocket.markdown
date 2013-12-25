@@ -188,14 +188,14 @@ def ws = WebSocket.using[String] { httpReq =>
 
 Yep, that's it! Iteratees really shine in these kind of use cases.
 
-### Stashable sub-streams
-Now, when a new chunk comes from the client, we want to stash the old sub-stream (even if it wasn't ended), and plug a new one. For this use case, we use `Concurrent.patchPannel` which allows precisely to do that. It has an imperative signature, so we will define a helper function to keep our code clean.
+### Replaceable sub-streams
+Now, when a new chunk comes from the client, we want to replace the old sub-stream (even if it wasn't ended) with a new one. For this use case, we use `Concurrent.patchPannel` which allows precisely to do that. It has an imperative signature, so we will define a helper function to keep our code clean.
 
 The WS code is:
 
 ```scala
 def ws = WebSocket.using[String] { httpReq =>
-  stashableStream { chunk =>
+  replaceableStream { chunk =>
     // we replace the previous stream with the one returned by chunkToStream
     val newOutStream = chunkToStream(chunk) 
     newOutStream
@@ -206,7 +206,7 @@ def ws = WebSocket.using[String] { httpReq =>
 I defined this helper function:
 
 ```scala
-def stashableStream[E, F](handler: E => Enumerator[F]): (Iteratee[E, Unit], Enumerator[F]) = {
+def replaceableStream[E, F](handler: E => Enumerator[F]): (Iteratee[E, Unit], Enumerator[F]) = {
   val promiseIn = promise[Iteratee[E, Unit]]
 
   val out = Concurrent.patchPanel[F] { patcher =>
