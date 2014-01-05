@@ -188,10 +188,10 @@ def ws = WebSocket.using[String] { httpReq =>
 I defined this helper function:
 
 ```scala
-def replaceableOutStream[E, F](handler: E => Enumerator[F]): (Iteratee[E, Unit], Enumerator[F]) = {
+def replaceableOutStream[E](handler: E => Enumerator[E]): (Iteratee[E, Unit], Enumerator[E]) = {
   val promiseIn = promise[Iteratee[E, Unit]]
 
-  val out = Concurrent.patchPanel[F] { patcher =>
+  val out = Concurrent.patchPanel[E] { patcher =>
     val in = Iteratee.foreach[E] { chunk =>
       // patchIn stash the previous stream, and plug the new one returned by handler
       patcher.patchIn(handler(chunk)) 
@@ -222,11 +222,11 @@ def ws = WebSocket.using[String] { httpReq =>
 Helper function:
 
 ```scala
-def mixableOutStream[E, F](handler: E => Enumerator[F]): (Iteratee[E, _], Enumerator[F]) = {
-  val promiseIn = promise[Iteratee[E, Enumerator[F]]]
+def mixableOutStream[E](handler: E => Enumerator[E]): (Iteratee[E, _], Enumerator[E]) = {
+  val promiseIn = promise[Iteratee[E, Enumerator[E]]]
 
-  val out = Concurrent.patchPanel[F] { patcher =>
-    val in = Iteratee.fold[E, Enumerator[F]](Enumerator.empty) { (currentStream, chunk) =>
+  val out = Concurrent.patchPanel[E] { patcher =>
+    val in = Iteratee.fold[E, Enumerator[E]](Enumerator.empty) { (currentStream, chunk) =>
       val substream = handler(chunk)
       val newStream = Enumerator.interleave(currentStream, substream)
       patcher.patchIn(newStream)
@@ -238,6 +238,8 @@ def mixableOutStream[E, F](handler: E => Enumerator[F]): (Iteratee[E, _], Enumer
   (Iteratee.flatten(promiseIn.future), out)
 }
 ```
+
+Using `Concurrent.patchPanel`, you can of course define many others ways of dealing with sub-streams in a WS out stream.
 
 ## Final thoughts
 We saw that in stream-oriented functional use cases, the Iteratee code stays simple and clear while handling efficiently complex problems. Iteratees are perfect for stream-oriented use cases of WebSocket, but I think Play should propose a built-in API for simple event-oriented use cases. As you saw in my `
