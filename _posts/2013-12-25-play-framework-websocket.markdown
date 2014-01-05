@@ -140,6 +140,8 @@ Of course, we can also mix the two approach. For example, we could handle the in
 ## Sub-streams composition with back-pressure
 For the following example, we suppose that each message (chunk) sent by a WS client contains information to fetch a stream. So each chunk of the main stream produces a stream of messages (a sub-stream). We'll see 3 alternatives to compose sub-streams.
 
+NB: composing several streams (Enumerators) into one is very easy with Enumerator's operators `andThen` and `interleave`, but here we want to *dynamically* compose sub-streams *inside* the main `out` WS stream.
+
 ### Sequential sub-streams
 If a chunk of a stream produces a sub-stream, then we want the whole sub-stream to be processed before processing the next chunk of the main stream. All of this with back-pressure, so the chunks from the main stream will not fill up server memory waiting for a sub-stream to end!
 
