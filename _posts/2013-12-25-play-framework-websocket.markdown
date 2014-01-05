@@ -13,46 +13,56 @@ In this post, I'll show how to obtain a simple *event-oriented* API from Iterate
 This approach is the simplest if you come from the imperative world and/or you think that the WS part of your app if more event-oriented than stream-oriented. What I mean by event-oriented is that all messages are independent and concurrent, unlike streams where messages/chunks are sequential. In other words, the fact that the processing of message N has not ended does not prevent to finish the processing of message N+1. Below is a simple imperative example:
 
 ```scala
-def ws = WebSocket.using[String] { httpReq =>
-
-  imperativeHandler[String](
-    onOpen = channel => {
-      Logger.info("start")
-      channel.push("hello from server")
-    },
-    
-    onMessage = (channel, message) => {
-      Logger.info(message)
-      message match {
-        case "event1" => 
-          val future1 = // call WebService 1
-          future1 foreach (channel.push(_))
-        case "event2" =>
-          val future2 = // call WebService 2
-          future2 foreach (channel.push(_))
-      }
-    },
-    
-    onClose = Logger.info("close")
-  )
-}
+def ws = ImperativeWebsocket.using[String](
+  onOpen = channel => {
+    Logger.info("connected")
+    channel.push("Hello from server")
+    // optionally send channel to an actor that pushes some events
+    PusherActor ! channel
+  },
+  
+  onMessage = (message, channel) => {
+    message match {
+      case "event1" =>
+        val future1 = // call service 1
+        future1 foreach (result => channel.push(result))
+      case "event2" =>
+        val future2 = // call service 2
+        future2 foreach (result => channel.push(result))
+      case "event3" =>
+        SomeActor ! SomeMessage
+    }
+  },
+  
+  onClose = Logger.info("disconnected")
+) 
 ```
 
-`imperativeHandler` is a helper function that can be defined on top of the Iteratee API like this:
+`ImperativeWebsocket` is a helper object that can be defined on top of the Iteratee API like this:
 
 ```scala
-def imperativeHandler[E](onOpen: Channel[E] => Unit, 
-                         onMessage: (Channel[E], E) => Unit, 
-                         onClose: => Unit): (Iteratee[E, Unit], Enumerator[E]) = {
+object ImperativeWebsocket {
 
-  val promiseIn = promise[Iteratee[E, Unit]]
-  val out = Concurrent.unicast[E] { channel =>
-    onOpen(channel)
-    val in = Iteratee.foreach[E](onMessage(channel, _)) map (_ => onClose)
-    promiseIn.success(in)
+  def using[E: WebSocket.FrameFormatter](
+          onOpen: Channel[E] => Unit, 
+          onMessage: (E, Channel[E]) => Unit, 
+          onClose: => Unit,
+          onError: (String, Input[E]) => Unit = (_: String, _: Input[E]) => ()
+  ): WebSocket[E] = {
+    val promiseIn = promise[Iteratee[E, Unit]]
+    val out = Concurrent.unicast[E](
+      onStart = channel => {
+        onOpen(channel)
+        val in = Iteratee.foreach[E] { message =>
+          onMessage(message, channel) 
+        } map (_ => onClose) 
+        promiseIn.success(in)
+      },
+      onError = onError
+    )
+    WebSocket.using[E](_ => (Iteratee.flatten(promiseIn.future), out))
   }
-      
-  (Iteratee.flatten(promiseIn.future), out)
+
 }
 ```
 
@@ -63,7 +73,7 @@ If you want to go further in the event/message-oriented approach, take a look at
 As said before, it is important to notice that unlike stream-oriented processing, our imperative event-oriented code handles all messages concurrently. While we are waiting for the future to be fulfilled in `event1`, `event2` can be fully processed and the result of `future2` can be sent to the client before `future1`. As a consequence, we can not control the possible message congestions in the server.
 
 ## A stream-oriented use case
-Sometimes, the IO that you want to model is more stream-like. You really have a flow of sequential (big) data chunks going through your application. In this case, it is very important for performance to handle back-pressure to avoid congestion of data chunks everywhere in your application. Back-pressure allows the slowest part of your stream (source(s), filter(s), sink(s)...) to impose its speed to the whole stream so that there are no accumulation of data chunks in your server memory.
+Sometimes, the IO that you want to model is more stream-like. You really have a flow of sequential (big) data chunks going through your application. In this case, it is very important for performance to handle **back-pressure** to avoid congestion of data chunks everywhere in your application. Back-pressure allows the slowest part of your stream (source(s), filter(s), sink(s)...) to impose its speed to the whole stream so that there are no accumulation of data chunks in your server memory.
 
 It turns out that Iteratees are perfect for that job. They handle back-pressure transparently and they have a lot of tools to modify and compose streams (see [Enumeratee](http://www.playframework.com/documentation/2.2.x/api/scala/index.html#play.api.libs.iteratee.Enumeratee$) and [Concurrent](http://www.playframework.com/documentation/2.2.x/api/scala/index.html#play.api.libs.iteratee.Concurrent$)).
 
@@ -87,7 +97,7 @@ def ws = WebSocket.using[String] { httpReq =>
 `Concurrent.joined` allows to transform the `in` Iteratee (data coming from the client) to an Enumerator (stream source).
 `Enumeratee.mapM` allows to map a data chunk asynchronously by returning a Future (the `M` stands for Monad, as Future is a Monad).
 
-Now suppose that the external web service suddenly crashes and recovers only 5 s after. Back-pressure prevents the Web clients to push more data into `asyncTransformer` before the current data chunk has been transformed, so incoming data chunks won't be stuck in your server filling up your memory waiting for the external service to recover.
+Now suppose that the external web service suddenly crashes and recovers only 5 s after. Back-pressure prevents the Web client to push more data into `asyncTransformer` before the current data chunk has been transformed, so incoming data chunks won't be stuck in your server filling up your memory while waiting for the external service to recover.
 
 Note that here we do a circle with the stream (from the Web client back to the Web client), but we could also have send the `out` stream to a database for example. Using a reactive (back-pressure enabled) driver like [ReactiveMongo](http://reactivemongo.org/), we get back-pressure all along the way from the Web client to the database! So if the database is temporary slow, the clients' web browsers will automatically push data slowly!
 
@@ -109,14 +119,16 @@ Or we want to simply drop data server-side after a timeout:
 
 ```scala
 val dropper = Concurrent.dropInputIfNotReady[String](1, TimeUnit.SECONDS)
+val out = inStream &> dropper &> asyncTransformer
 ```
 
-Or we want to re-chunk to bigger chunks (concatenating 10 chunks into one):
+And we want before to re-chunk to bigger chunks (concatenating 10 chunks into one):
 
 ```scala
 val reChunker = Enumeratee.grouped[String] {
   Enumeratee.take(10) transform Iteratee.consume()
 } 
+val out = inStream &> reChunker &> dropper &> asyncTransformer
 ```
 
 Check Play's Iteratee/Enumerator/Enumerator [doc](http://www.playframework.com/documentation/2.2.x/Iteratees), [API](http://www.playframework.com/documentation/2.2.x/api/scala/index.html#play.api.libs.iteratee.Enumeratee$) and [extra](https://github.com/jroper/play-iteratees-extras) for more possibilities, and some Web apps that use a lot of this: [Zound](http://greweb.me/2012/08/zound-a-playframework-2-audio-streaming-experiment-using-iteratees/) (with an example of stream broadcast) and [Ztream](https://github.com/atamborrino/ztream). There are also some very interesting blog posts on the subject, for example on [Klout's engineering blog](http://engineering.klout.com/2013/01/iteratees-in-big-data-at-klout/) and on [LinkedIn's engineering blog](http://engineering.linkedin.com/play/play-framework-democratizing-functional-programming-modern-web-programmers).
@@ -124,7 +136,7 @@ Check Play's Iteratee/Enumerator/Enumerator [doc](http://www.playframework.com/d
 Of course, we can also mix the two approach. For example, we could handle the in-coming WS client messages in an imperative way with `Iteratee.foreach` but return a functional Enumerator for out-coming messages (so we have back-pressure from the server to the client).
 
 ## Sub-streams composition with back-pressure
-This power of expression allows you to compose streams in a lot of different manners. For the following example, we suppose that each message (chunk) sent by a WS client contains information to fetch a stream. So each chunk of the main stream produces a stream of messages (a sub-stream). We'll see 3 alternatives to compose sub-streams.
+For the following example, we suppose that each message (chunk) sent by a WS client contains information to fetch a stream. So each chunk of the main stream produces a stream of messages (a sub-stream). We'll see 3 alternatives to compose sub-streams.
 
 ### Sequential sub-streams
 If a chunk of a stream produces a sub-stream, then we want the whole sub-stream to be processed before processing the next chunk of the main stream. All of this with back-pressure, so the chunks from the main stream will not fill up server memory waiting for a sub-stream to end!
@@ -134,8 +146,8 @@ Sub-streams are Enumerators that can come from databases, WebService's HTTP chun
 ```scala
 val chunkToStream: String => Enumerator[String] = { chunk =>
   Enumerator.unfoldM[Int, String](1) {
-    case s if s <= 3 =>
-      Promise.timeout(Some((s + 1, chunk + " " + s.toString)), 2 seconds)
+    case i if i <= 3 =>
+      Promise.timeout(Some((i + 1, chunk + " " + i.toString)), 2 seconds)
     case _ =>
       Future.successful(None)
   } 
