@@ -7,7 +7,7 @@ categories: play
 
 Play 2.2's Scala WebSocket API makes you deal with functional abstractions for stream-oriented processing: Iteratees and Enumerators. They allow to have an unified stream API across the whole framework (HTTP body parsing, Comet, WebSockets...). As pointed in the discussion that followed the article [Play, Scala, and Iteratees vs. Node.js, JavaScript, and Socket.io](http://brikis98.blogspot.fr/2013/11/play-scala-and-iteratees-vs-nodejs.html?m=1), Iteratees are very powerful, actually *too* powerful for some basic WS use cases. They are also *stream-oriented*, whereas some WS use cases are more naturally *event-oriented*. This leads to a not-so-simple API for basic event-oriented use cases, whereas all other APIs in Play manage to satisfy one of its goals: a *progressive* learning curve towards functional programming for Web developers.
 
-In this post, I'll show how to obtain a simple *event-oriented* API from Iteratees, and then I'll show when and how to use a more advanced and *stream-oriented* approach with *back-pressure* (one of the main advantages of the stream-oriented Iteratee approach).
+In this post, I'll show how to obtain a simple *event-oriented* API from Iteratees, and then I'll show when and how to use a more advanced and *stream-oriented* approach with **back-pressure** (one of the main advantages of the stream-oriented Iteratee approach).
 
 ## A simple event-oriented example
 This approach is the simplest if you come from the imperative world and/or you think that the WS part of your app if more event-oriented than stream-oriented. What I mean by event-oriented is that all messages are independent and concurrent, unlike streams where messages/chunks are sequential. In other words, the fact that the processing of message N has not ended does not prevent to finish the processing of message N+1. Below is a simple imperative example:
@@ -61,7 +61,7 @@ object ImperativeWebsocket {
       },
       onError = onError
     )
-    
+
     WebSocket.using[E](_ => (Iteratee.flatten(promiseIn.future), out))
   }
 
@@ -70,12 +70,12 @@ object ImperativeWebsocket {
 
 The internal definition may look like quite complex, but it's because we are twisting Iteratees to get an imperative API from them. We'll see than in stream-oriented use cases, the Iteratee code becomes much more clear and straight-forward.
 
-If you want to go further in the event/message-oriented approach, take a look at [play-actor-room](http://mandubian.com/2013/09/22/play-actor-room/) library which uses actors to hide the Iteratees stuff and exposes a very simple message-oriented API with built-in **rooms**, **broadcasts** and more.
+If you want to go further in the event/message-oriented approach, take a look at [play-actor-room](http://mandubian.com/2013/09/22/play-actor-room/) library which uses actors to hide the Iteratees stuff and exposes a very simple message-oriented API with built-in rooms, broadcasts and more.
 
 As said before, it is important to notice that unlike stream-oriented processing, our imperative event-oriented code handles all messages concurrently. While we are waiting for the future to be fulfilled in `event1`, `event2` can be fully processed and the result of `future2` can be sent to the client before `future1`. As a consequence, we can not control the possible message congestions in the server.
 
 ## A stream-oriented use case
-Sometimes, the IO that you want to model is more stream-like. You really have a flow of sequential (big) data chunks going through your application. In this case, it is very important for performance to handle **back-pressure** to avoid congestion of data chunks everywhere in your application. Back-pressure allows the slowest part of your stream (source(s), filter(s), sink(s)...) to impose its speed to the whole stream so that there are no accumulation of data chunks in your server memory.
+Sometimes, the IO that you want to model is more stream-like. You really have a flow of sequential (big) data chunks going through your application. In this case, it is very important for performance to handle back-pressure to avoid congestion of data chunks everywhere in your application. Back-pressure allows the slowest part of your stream (source(s), filter(s), sink(s)...) to impose its speed to the whole stream so that there are no accumulation of data chunks in your server memory.
 
 It turns out that Iteratees are perfect for that job. They handle back-pressure transparently and they have a lot of tools to modify and compose streams (see [Enumeratee](http://www.playframework.com/documentation/2.2.x/api/scala/index.html#play.api.libs.iteratee.Enumeratee$) and [Concurrent](http://www.playframework.com/documentation/2.2.x/api/scala/index.html#play.api.libs.iteratee.Concurrent$)).
 
