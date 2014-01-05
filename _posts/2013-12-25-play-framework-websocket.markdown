@@ -50,6 +50,7 @@ object ImperativeWebsocket {
           onError: (String, Input[E]) => Unit = (_: String, _: Input[E]) => ()
   ): WebSocket[E] = {
     val promiseIn = promise[Iteratee[E, Unit]]
+
     val out = Concurrent.unicast[E](
       onStart = channel => {
         onOpen(channel)
@@ -60,6 +61,7 @@ object ImperativeWebsocket {
       },
       onError = onError
     )
+    
     WebSocket.using[E](_ => (Iteratee.flatten(promiseIn.future), out))
   }
 
