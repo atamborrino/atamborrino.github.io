@@ -68,11 +68,11 @@ object ImperativeWebsocket {
 }
 ```
 
-The internal definition may look like quite complex, but it's because we are twisting Iteratees to get an imperative API from them. We'll see than in stream-oriented use cases, the Iteratee code becomes much more clear and straight-forward.
+The internal definition may look like quite complex, but it's because we are twisting Iteratees to get an imperative API from them. We'll see than in stream-oriented use cases, the Iteratee code becomes much more natural and straight-forward.
 
 If you want to go further in the event/message-oriented approach, take a look at [play-actor-room](http://mandubian.com/2013/09/22/play-actor-room/) library which uses actors to hide the Iteratees stuff and exposes a very simple message-oriented API with built-in rooms, broadcasts and more.
 
-As said before, it is important to notice that unlike stream-oriented processing, our imperative event-oriented code handles all messages concurrently. While we are waiting for the future to be fulfilled in `event1`, `event2` can be fully processed and the result of `future2` can be sent to the client before `future1`. As a consequence, we can not control the possible message congestions in the server.
+As said before, it is important to notice that unlike stream-oriented processing, our imperative event-oriented code handles all messages concurrently. While we are waiting for the future to be fulfilled in `event1`, `event2` can be fully processed and the result of `future2` can be sent to the client before `future1`. As a consequence, we can not control the possible congestions of messages in the server.
 
 ## A stream-oriented use case
 Sometimes, the IO that you want to model is more stream-like. You really have a flow of sequential (big) data chunks going through your application. In this case, it is very important for performance to handle back-pressure to avoid congestion of data chunks everywhere in your application. Back-pressure allows the slowest part of your stream (source(s), filter(s), sink(s)...) to impose its speed to the whole stream so that there are no accumulation of data chunks in your server memory.
