@@ -237,6 +237,6 @@ def mixableOutStream[E, F](handler: E => Enumerator[F]): (Iteratee[E, _], Enumer
 
 ## Final thoughts
 We saw that in stream-oriented functional use cases, the Iteratee code stays simple and clear while handling efficiently complex problems. Iteratees are perfect for stream-oriented use cases of WebSocket, but I think Play should propose a built-in API for simple event-oriented use cases. As you saw in my `
-imperativeHandler` definition, it is quite easy to provide an imperative API on top of Iteratees once you understand them, but maybe not for new-comers. 
+ImperativeWebsocket` definition, it is quite easy to provide an imperative API on top of Iteratees once you understand them, but maybe not for new-comers. 
 
 NB: Play's *Java* Websocket API is event-oriented by default.
