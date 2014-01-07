@@ -171,7 +171,7 @@ def ws = WebSocket.using[String] { httpReq =>
 }
 ```
 
-Yep, that's it! Iteratees really shine in these kind of use cases.
+Yep, that's it! Iteratees really shine in these kinds of use cases.
 
 ### Replaceable sub-streams
 Now, when a new chunk comes from the client, we want to replace the old sub-stream (even if it wasn't ended) with a new one. For this use case, we use `Concurrent.patchPannel` which allows precisely to do that. It has an imperative signature, so we will define a helper function to keep our code clean.
