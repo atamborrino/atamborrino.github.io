@@ -96,8 +96,10 @@ a:hover {
 	color: black;
 }
 
-#post-container {
-	margin-top: 70px;
+@media (min-width: 768px) {
+	#post-container {
+		margin-top: 70px;
+	}
 }
 
 @media (min-width: 992px) {
