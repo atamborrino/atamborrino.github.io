@@ -1,6 +1,6 @@
 ---
 layout: post
-title:  "Play Framework's WebSocket API: from imperative events to functional streams (of streams)"
+title:  "Play Framework's WebSocket API: from imperative events to functional streams"
 date:   2013-12-25 18:25:21
 categories: play
 ---
